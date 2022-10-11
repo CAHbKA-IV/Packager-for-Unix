@@ -21,24 +21,25 @@ if [ $PROXY_HOST ];then
 fi
 
 echo "Install compilation tools"
-INSTALL_PACKAGE=0
-ERROR_PACKAGE=0
-[ $(which gcc) ] && [ $(which make) ] && [ $(which rsync) ] && [ $(which g++) ] || INSTALL_PACKAGE=1
-
-if [ $INSTALL_PACKAGE = 1 ];then
-	if [ -f /etc/redhat-release ];then
-		yum install -y gcc make rsync gcc-c++ || ERROR_PACKAGE=1
-	elif [ -f /etc/debian_version ];then
-		apt update && apt install -y build-essential rsync || ERROR_PACKAGE=1
-	elif [ -f /etc/fedora-release ];then
-		dnf install -y gcc gcc make rsync gcc-c++ || ERROR_PACKAGE=1
-	else
-		echo "gcc, make and rsync are needed to continue : please install them before continue" && exit 1
-	fi
-	if [ $ERROR_PACKAGE == 1 ];then
-		echo "Error while downloading packages dependencies"
-		exit 1
-	fi
+if [ -f /etc/redhat-release ];then
+	[ $(which gcc) ] || yum install -y gcc
+	[ $(which make) ] || yum install -y make
+	[ $(which rsync) ] || yum install -y rsync
+	[ $(which g++) ] || yum install -y  gcc-c++
+elif [ -f /etc/debian_version ];then
+	apt-get update
+	[ $(which gcc) ] || apt-get install -y gcc
+	[ $(which make) ] || apt-get install -y make
+	[ $(which rsync) ] || apt-get install -y rsync
+	[ $(which g++) ] || apt-get install -y g++
+elif [ -f /etc/fedora-release ];then
+	[ $(which gcc) ] || dnf install -y gcc
+	[ $(which make) ] || dnf install -y make
+	[ $(which rsync) ] || dnf install -y rsync
+	[ $(which g++) ] || dnf install -y gcc-c++
+else
+	echo "Unknown Linux distribution"
+	exit 1
 fi
 
 if [ $(which curl) ];then
@@ -134,10 +135,10 @@ cd $OCS_PACKAGE_DIR/work
 
 OCS_FILE_NAME=$(echo $OCSAGENT_DL_LINK  |  awk -F"/" '{print $NF}')
 tar zxf $OCS_PACKAGE_DIR/data/$OCS_FILE_NAME
-cd $(basename $OCS_FILE_NAME .tar.gz)
+cd $(basename $OCS_PACKAGE_DIR/work/$OCS_FILE_NAME .tar.gz)
 
-cp ocsinventory-agent /opt/ocsinventory/
 cp -r lib/Ocsinventory $OCS_INSTALL_DIR/perl/lib/${PERL_VERSION}/
+cp ocsinventory-agent $OCS_INSTALL_DIR/
 
 sed -i '1 s|^.*$|#!'${OCS_INSTALL_DIR}'/perl/bin/perl|' $OCS_INSTALL_DIR/ocsinventory-agent
 
@@ -176,12 +177,17 @@ fi
 
  # End Nmap compilation
 
-# Guess which os do use
-UNAME=$(uname -s -r -m -o)
+# Guess which Linux Distribution and which Distribution major version it is
 if [ -f /etc/os-release ];then
 	LINUX_DISTRIB=$(grep "^ID=" /etc/os-release | awk -F"=" '{print $2}' | tr -d "\"")
 	DISTIB_MAJOR_VERSION=$(grep "^VERSION_ID=" /etc/os-release | awk -F"=" '{print $2}' | tr -d "\"" | cut -d. -f1)
+else
+	LINUX_DISTRIB="UnknownLinux"
+	DISTIB_MAJOR_VERSION="UnknownVersion"
 fi
+
+echo $LINUX_DISTRIB
+echo $DISTIB_MAJOR_VERSION
 
 # Create addtional file (ParserDetails.ini) to avoid error message when executing agent
 touch ${PARSER_INI_PATH}
@@ -216,7 +222,7 @@ fi
 
 # If crontab required from packageOCSAgent.config, create a crontab each X hours
 if [ "${OCS_AGENT_CRONTAB}" != 0 ];then
-	CRON_COMMAND_LINE="crontab -l | { cat; echo '0 ${OCS_AGENT_CRONTAB_HOUR} 0 0 0 ${SH_COMMAND_LINE}'; } | crontab -"
+	CRON_COMMAND_LINE="crontab -l | { cat; echo '0 */${OCS_AGENT_CRONTAB_HOUR} 0 0 0 ${SH_COMMAND_LINE}'; } | crontab -"
 	echo "Crontab generated : ${CRON_COMMAND_LINE}"
 fi
 
@@ -234,18 +240,12 @@ if [ ${OCS_AGENT_CRONTAB} != 0 ];then
 fi
 
 # Install finished, tar step
-echo "$UNAME" > $OCS_INSTALL_DIR/os-version.txt
-if [ -n "$LINUX_DISTRIB" ];then
-	echo "$LINUX_DISTRIB $DISTIB_MAJOR_VERSION" >> $OCS_INSTALL_DIR/os-version.txt
-	PACKAGE_NAME="${LINUX_DISTRIB}-${DISTIB_MAJOR_VERSION}"
-else
-	PACKAGE_NAME="${uname -s}-${uname -r}"
-fi
+echo "$LINUX_DISTRIB $DISTIB_MAJOR_VERSION" > $OCS_INSTALL_DIR/os-version.txt
 
-tar zcf $OCS_PACKAGE_DIR/ocsinventory-agent_$PACKAGE_NAME.tar.gz $OCS_INSTALL_DIR
+tar zcf $OCS_PACKAGE_DIR/ocsinventory-agent_${LINUX_DISTRIB}-${DISTIB_MAJOR_VERSION}.tar.gz $OCS_INSTALL_DIR
 
 echo "Packaging successfully done"
-echo "Package is $OCS_PACKAGE_DIR/ocsinventory-agent_$PACKAGE_NAME.tar.gz"
+echo "Package is $OCS_PACKAGE_DIR/ocsinventory-agent_${LINUX_DISTRIB}-${DISTIB_MAJOR_VERSION}.tar.gz"
 
 echo "After deployment performed on another system, launch OCS Agent like this"
 echo "${OCS_INSTALL_DIR}/scripts/execute_agent.sh"
