@@ -51,7 +51,7 @@ Output is a tar/gz archive: ocsinventory-agent_*LinuxDistribution*_*MajorVersion
 As root user
 ```shell
 cd /
-tar zvf /path/to/archive/ocsinventory-agent-xxx.tar.gz
+tar zxf /path/to/archive/ocsinventory-agent-xxx.tar.gz
 /opt/ocsinventory/scripts/create_crontab.sh
 ```
 
