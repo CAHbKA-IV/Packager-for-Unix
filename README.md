@@ -55,7 +55,7 @@ tar zvf /path/to/archive/ocsinventory-agent-xxx.tar.gz
 /opt/ocsinventory/scripts/create_crontab.sh
 ```
 
-For starting inventarization manually you can use
+To start inventarization manually you can use
 
 ```shell
 /opt/ocsinventory/scripts/execute_agent.sh
