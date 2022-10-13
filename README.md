@@ -21,9 +21,10 @@ The package embeds compiled Perl for the related OS, OCS Agent perl package, and
     * PROXY_HOST if you have direct Internet connection
     * OCS_INSTALL_DIR: OCS Agent installation directory
     * PERL_VERSION: Perl version you want to compile and embed in OCS package
-    * PERL_DL_LINK: Perl download link
-    * OCSAGENT_DL_LINK: OCS Agent download link
-    * NMAP_DL_LINK: Nmap download link
+    * PERL_DL_LINK: Perl sources download link
+    * EXPAT_DL_LINK: Expat sources download link
+    * OCSAGENT_DL_LINK: OCS Agent sources download link
+    * NMAP_DL_LINK: Nmap sources download link
     * OCS_AGENT_CRONTAB: ```[0-1]``` Create script to add crontab on system
     * OCS_AGENT_CRONTAB_HOUR: How many hour between each crontab call
     * OCS_AGENT_LAZY: ```[0-1]``` Activate lazy mode on Agent
@@ -45,9 +46,25 @@ As root user
 
 Output is a tar/gz archive: ocsinventory-agent_*LinuxDistribution*_*MajorVersion*.tar.gz
 
+## Installation on target system
+
+As root user
+```shell
+cd /
+tar zvf /path/to/archive/ocsinventory-agent-xxx.tar.gz
+/opt/ocsinventory/scripts/create_crontab.sh
+```
+
+For starting inventarization manually you can use
+
+```shell
+/opt/ocsinventory/scripts/execute_agent.sh
+```
+
 ## Todo
 
 1. Bypass current limitations
+2. Less dirty openssl detection, reduce number of hacks in source compilation
 
 ## Current Limitation
 
